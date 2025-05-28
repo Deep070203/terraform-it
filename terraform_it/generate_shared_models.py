@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, Tuple, List
 from jinja2 import Environment, FileSystemLoader
-from helpers import map_to_go_type, create_var_names, check_if_primitive
+from terraform_it.helpers import map_to_go_type, create_var_names, check_if_primitive
 
 env = Environment(loader=FileSystemLoader('templates'))
 

@@ -6,7 +6,6 @@ import yaml
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 from typing import Dict, Any, List
-from terraform_it.helpers import *
 
 def load_yaml_file(file_path: str) -> Dict[str, Any]:
     """Load and parse a YAML file."""
@@ -43,6 +42,7 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
         from terraform_it.generate_shared_models import generate_shared_models as gen_shared_models
         from terraform_it.generate_data_source import generate_data_source as gen_data_source
         import terraform_it.generators as generators
+        from terraform_it.helpers import get_information, get_resources, get_data_sources
     except ImportError as e:
         # Print the detailed error message
         print(f"Error importing required modules: {e}")

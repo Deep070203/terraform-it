@@ -3,7 +3,6 @@ import re
 import yaml
 from typing import Dict, Any
 from collections import defaultdict
-import openapi
 from jinja2 import Environment, FileSystemLoader, Template
 from terraform_it.helpers import to_camel_case, get_resources, get_data_sources, get_all_ref_values
 
