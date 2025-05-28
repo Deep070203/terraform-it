@@ -1,10 +1,10 @@
 from jinja2 import Environment, FileSystemLoader
 import os
-from helpers import *
+from terraform_it.helpers import *
 from typing import Dict, Any
 from collections import defaultdict
-from generators import *
-from helpers import normalize_parameter
+from terraform_it.generators import *
+from terraform_it.helpers import normalize_parameter
 
 resource_vars = {}
 refs = {}

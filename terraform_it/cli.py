@@ -6,7 +6,7 @@ import yaml
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 from typing import Dict, Any, List
-from helpers import *
+from terraform_it.helpers import *
 
 def load_yaml_file(file_path: str) -> Dict[str, Any]:
     """Load and parse a YAML file."""
@@ -36,30 +36,26 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
     client_name = openapi_spec['info']['title'].split(' ')[0]
     servers = openapi_spec.get('servers', [])
     
-    # Import necessary modules for generation
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    
-    # Import after path setup
+    # Import modules directly - they should be available since they're part of the package
     try:
-        import helpers
-        from generate_provider import generate_provider
-        from generate_resource import generate_resource
-        from generate_shared_models import generate_shared_models
-        from generate_data_source import generate_data_source
-    except ImportError:
-        # Print the error message
-        print("Error importing required modules.")
+        from terraform_it.generate_provider import generate_provider as gen_provider
+        from terraform_it.generate_resource import generate_resource as gen_resource
+        from terraform_it.generate_shared_models import generate_shared_models as gen_shared_models
+        from terraform_it.generate_data_source import generate_data_source as gen_data_source
+        import terraform_it.generators as generators
+    except ImportError as e:
+        # Print the detailed error message
+        print(f"Error importing required modules: {e}")
         sys.exit(1)
     
-    import generators
-
-    # Setup Jinja environment
-    env = Environment(loader=FileSystemLoader('../templates'))
+    # Setup Jinja environment - fix the template path
+    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+    env = Environment(loader=FileSystemLoader(template_dir))
     
     # Get resources from OpenAPI spec and config
-    information = helpers.get_information(openapi_spec, config)
-    resources = helpers.get_resources(openapi_spec, config)
-    data_sources = helpers.get_data_sources(openapi_spec, config)
+    information = get_information(openapi_spec, config)
+    resources = get_resources(openapi_spec, config)
+    data_sources = get_data_sources(openapi_spec, config)
     
     shared_models = openapi_spec['components']['schemas']
     components = openapi_spec['components']
@@ -73,7 +69,7 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
     
     # Generate provider.go
     provider_template = env.get_template('provider.j2')
-    generate_provider(client_name, servers, resources, provider_template)
+    gen_provider(client_name, servers, resources, provider_template)
     
     # Generate resources
     print("Generating resources...")
@@ -99,7 +95,7 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
         'schema_helper': schema_helpers_template,
         'testing': testing_template
     }
-    generate_resource(resources, client_name, shared_models, templates, components, information)
+    gen_resource(resources, client_name, shared_models, templates, components, information)
     
     # Generate data sources
     print("Generating data sources...")
@@ -117,7 +113,7 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
         'schema_helper': schema_helpers_template,
         'testing': data_source_testing_template
     }
-    generate_data_source(gen_data_sources, client_name, shared_models, templates, components, information)
+    gen_data_source(gen_data_sources, client_name, shared_models, templates, components, information)
     
     # Generate shared models
     print("Generating shared models...")
@@ -131,7 +127,7 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
         'getters': getters_template,
         'enum_model': shared_enum_model_template
     }
-    generate_shared_models(models, client_name, templates)
+    gen_shared_models(models, client_name, templates)
     
     # Generate main.go
     main_template = env.get_template('main.go.j2')

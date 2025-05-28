@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="terraform-it",
-    version="0.1.0",
+    version="0.1.4",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -26,4 +26,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    package_data={
+        "terraform_it": ["templates/*", "templates/*/*"],
+    },
 )
