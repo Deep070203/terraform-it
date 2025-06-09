@@ -22,7 +22,7 @@ pip install terraform-it
 ## Usage
 
 ```bash
-tfit openapi-spec.yaml config.yaml --output-dir ./terraform-provider-rivet
+tfit openapi-spec.yaml config.yaml --output-dir ./terraform-provider-<provider_name>
 ```
 
 ### Arguments
