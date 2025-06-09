@@ -106,6 +106,8 @@ def add_field(resources, resource_name, var_name, field_data):
         pass
 
 def add_var_type(var_type):
+    if type(var_type) == list:
+        var_type = var_type[0]
     if var_type == 'boolean':
         return 'bool'
     elif var_type == 'integer':
@@ -135,7 +137,7 @@ def get_validators(data: Dict[str, Any]):
     if 'pattern' in data:
         validators['pattern'] = data['pattern']
     if 'enum' in data:
-        validators['enum'] = ["\""+val+"\"" for val in data['enum']]
+        validators['enum'] = ["\""+val+"\"" for val in data['enum'] if type(val) == str]
     if 'minLength' in data:
         validators['min_length'] = data['minLength']
     if 'maxLength' in data:
@@ -147,7 +149,7 @@ def validator_helpers(var_name, var_type, var_data, required):
     if 'pattern' in var_data['validators']:
         return f"\"{var_name}\": schema.{var_type.capitalize()}Attribute{{\n{indent(4)}{required}: true,\n{indent(4)}validators: []validator.{var_type.capitalize()}{{\n{indent(5)}stringvalidator.RegexMatches(regexp.MustCompile(\"{var_data['validators']['pattern']}\")),\n{indent(4)}}},\n{indent(3)}}}"
     elif 'enum' in var_data['validators']:
-        return f"\"{var_name}\": schema.{var_type.capitalize()}Attribute{{\n{indent(4)}{required}: true,\n{indent(4)}validators: []validator.{var_type.capitalize()}{{\n{indent(5)}stringvalidator.OneOf({", ".join(var_data['validators']['enum'])}),\n{indent(4)}}},\n{indent(3)}}}"
+        return f"\"{var_name}\": schema.{var_type.capitalize()}Attribute{{\n{indent(6)}{required}: true,\n{indent(6)}validators: []validator.{var_type.capitalize()}{{\n{indent(7)}stringvalidator.OneOf({", ".join(var_data['validators']['enum'])}),\n{indent(6)}}},\n{indent(5)}}}"
     elif 'min_length' in var_data['validators'] and 'max_length' in var_data['validators']:
         return f"\"{var_name}\": schema.{var_type.capitalize()}Attribute{{\n{indent(4)}{required}: true,\n{indent(4)}validators: []validator.{var_type.capitalize()}{{\n{indent(5)}stringvalidator.UTF8LengthBetween({var_data['validators']['min_length']}, {var_data['validators']['max_length']}),\n{indent(4)}}},\n{indent(3)}}}"
     elif 'min_length' in var_data['validators']:
@@ -245,3 +247,26 @@ def get_information(spec: dict, config: dict) -> dict:
         "methods": methods,
         "resource_path": resource_path
     }
+
+def check_for_validation(ref, shared_models):
+    if ref in shared_models:
+        if 'allOf' in shared_models[ref]:
+            shared_models[ref]['properties'] = {}
+            for item in shared_models[ref]['allOf']:
+                if 'properties' in item:
+                    shared_models[ref]['properties'].update(item['properties'])
+                elif '$ref' in item:
+                    ref = item['$ref'].split('/')[-1]
+                    check_for_validation(ref, shared_models)
+            return ref
+        else:
+            return ref
+    else:
+        return ref
+
+
+def check_for_validation_params(parameter):
+    if 'allOf' in parameter['schema']:
+        # print(parameter['schema']['allOf'][0])
+        parameter['schema'] = parameter['schema']['allOf'][0]
+    return parameter

@@ -1,3 +1,6 @@
 # Ignore dist
 dist/
 *.egg-info/
+lago_gen.yaml
+openapi.yaml
+test/

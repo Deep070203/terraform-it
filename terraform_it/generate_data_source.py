@@ -32,7 +32,14 @@ def generate_inner_schema(properties: Dict[str, Any] | str, shared_models: Dict[
                 required = "Required"
             else:
                 required = "Optional"
-            
+            if type(var_type) == list:
+                var_type = var_type[0]
+                if var_type == 'integer':
+                    var_type = 'int64'
+                elif var_type == 'boolean':
+                    var_type = 'bool'
+                elif var_type == 'number':
+                    var_type = 'int64'
             if var_type not in ['int64', 'string', 'number', 'bool', 'array', 'object']:
                 if not 'properties' in shared_models[var_type]:
                     continue
@@ -94,6 +101,8 @@ def generate_data_source(data_sources: Dict[str, Any], client: str, shared_model
                 data_sources[resource][method]['requestBody'] = refs['requestBody']
             if 'parameters' in schema:
                 for parameter in schema['parameters']:
+                    # print(parameter)
+                    parameter = check_for_validation_params(parameter) if 'schema' in parameter else parameter
                     if '$ref' in parameter:
                         parameter = normalize_parameter(parameter, components)
                     var_name = parameter['name']
@@ -115,6 +124,14 @@ def generate_data_source(data_sources: Dict[str, Any], client: str, shared_model
                         required = "Required"
                     else:
                         required = "Optional"
+                    if type(var_type) == list:
+                        var_type = var_type[0]
+                        if var_type == 'integer':
+                            var_type = 'int64'
+                        elif var_type == 'boolean':
+                            var_type = 'bool'
+                        elif var_type == 'number':
+                            var_type = 'int64'
                     if var_type not in ['int64', 'string', 'number', 'bool', 'array']:
                         if var_name not in check:
                             check.add(var_name)
@@ -131,6 +148,7 @@ def generate_data_source(data_sources: Dict[str, Any], client: str, shared_model
                             struct_vars.append(f"{to_camel_case(var_name)}  types.{var_type.capitalize()}  `tfsdk:\"{var_name}\"`")
                             check.add(var_name)
             if refs['responses'] != []:
+                refs['responses'] = check_for_validation(refs['responses'], shared_models)
                 for var in shared_models[refs['responses']]['properties']:
                     if 'type' in shared_models[refs['responses']]['properties'][var]:
                         if shared_models[refs['responses']]['properties'][var]['type'] == 'boolean':
@@ -145,6 +163,14 @@ def generate_data_source(data_sources: Dict[str, Any], client: str, shared_model
                         required = "Optional"
                     else: 
                         required = "Required"
+                    if type(var_type) == list:
+                        var_type = var_type[0]
+                        if var_type == 'integer':
+                            var_type = 'int64'
+                        elif var_type == 'boolean':
+                            var_type = 'bool'
+                        elif var_type == 'number':
+                            var_type = 'int64'
                     field_data = {
                         "type": var_type,
                         "required": required,
@@ -167,6 +193,7 @@ def generate_data_source(data_sources: Dict[str, Any], client: str, shared_model
                             check.add(var)
                             struct_vars.append(f"{to_camel_case(var)}  types.{var_type.capitalize()}  `tfsdk:\"{var}\"`")
             if 'requestBody' in schema:
+                refs['requestBody'] = check_for_validation(refs['requestBody'], shared_models)
                 for var in shared_models[refs['requestBody']]['properties']:
                     if shared_models[refs['requestBody']]['properties'][var] == {}:
                         var_type = 'interface{}'
@@ -183,6 +210,14 @@ def generate_data_source(data_sources: Dict[str, Any], client: str, shared_model
                         required = "Optional"
                     else: 
                         required = "Required"
+                    if type(var_type) == list:
+                        var_type = var_type[0]
+                        if var_type == 'integer':
+                            var_type = 'int64'
+                        elif var_type == 'boolean':
+                            var_type = 'bool'
+                        elif var_type == 'number':
+                            var_type = 'int64'
                     field_data = {
                         "type": var_type,
                         "required": required,

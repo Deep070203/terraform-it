@@ -14,6 +14,7 @@ def generate_inner_schema(properties: Dict[str, Any] | str, shared_models: Dict[
     else:
         inner_schema = []
         for name, prop in properties.items():
+            # print(name, prop)
             if 'type' in prop:
                 if prop['type'] == 'boolean':
                     var_type = 'bool'
@@ -29,6 +30,12 @@ def generate_inner_schema(properties: Dict[str, Any] | str, shared_models: Dict[
                 required = "Optional"
             if type(var_type) == list:
                 var_type = var_type[0]
+                if var_type == 'integer':
+                    var_type = 'int64'
+                elif var_type == 'boolean':
+                    var_type = 'bool'
+                elif var_type == 'number':
+                    var_type = 'int64'
                 required = "Optional" if var_type[1] == 'null' else "Required"
             if var_type not in ['int64', 'string', 'number', 'bool', 'array', 'object']:
                 # print(name, var_type)
@@ -47,7 +54,7 @@ def generate_inner_schema(properties: Dict[str, Any] | str, shared_models: Dict[
                 inner_schema.append(validator_helpers(name, var_type, var_data, required))
             else:
                 inner_schema.append(f"{name}: schema.{var_type.capitalize()}Attribute{{\n{indent(6)}{required}: true,\n{indent(5)}}}")
-        return f"Attributes: map[string]schema.Attribute{{\n{indent(5)}{f',\n{indent(5)}'.join(inner_schema)}\n{indent(4)}}}"
+        return f"Attributes: map[string]schema.Attribute{{\n{indent(5)}{f',\n{indent(5)}'.join(inner_schema)},\n{indent(4)}}}"
 
 
 def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dict[str, Any], templates: Dict[str, Any], components: Dict[str, Any], information: Dict[str, Any]):
@@ -63,7 +70,7 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
     schema_helpers_template = templates['schema_helper']
     testing_template = templates['testing']
 
-    print(information)
+    # print(information)
 
     for resource, value in resources.items():
         # print(resource, "\n", value)
@@ -95,10 +102,10 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
         update_parameters = []
         read_parameters = []
         delete_parameters = []
-        create_method_name = information['methods'][resource]['create']
-        read_method_name = information['methods'][resource]['read']
-        update_method_name =  information['methods'][resource]['update']
-        delete_method_name = information['methods'][resource]['delete']
+        create_method_name = information['methods'][resource]['create'] if 'create' in information['methods'][resource] else ""
+        read_method_name = information['methods'][resource]['read'] if 'read' in information['methods'][resource] else ""
+        update_method_name =  information['methods'][resource]['update'] if 'update' in information['methods'][resource] else ""
+        delete_method_name = information['methods'][resource]['delete'] if 'delete' in information['methods'][resource] else ""
         sdk_client_path = information['sdk_client_path']
         resource_path = information['resource_path'][resource]
 
@@ -136,6 +143,14 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                         required = "Required"
                     else:
                         required = "Optional"
+                    if type(var_type) == list:
+                        var_type = var_type[0]
+                        if var_type == 'integer':
+                            var_type = 'int64'
+                        elif var_type == 'boolean':
+                            var_type = 'bool'
+                        elif var_type == 'number':
+                            var_type = 'int64'
                     if var_type not in ['int64', 'string', 'number', 'bool', 'array']:
                         if var_name not in check:
                             check.add(var_name)
@@ -152,6 +167,8 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                             struct_vars.append(f"{to_camel_case(var_name)}  types.{var_type.capitalize()}  `tfsdk:\"{var_name}\"`")
                             check.add(var_name)
             if refs['responses'] != []:
+                refs['responses'] = check_for_validation(refs['responses'], shared_models)
+                # print(resource, refs['responses'], shared_models[refs['responses']])
                 for var in shared_models[refs['responses']]['properties']:
                     r_vars.append(var)
                     if 'type' in shared_models[refs['responses']]['properties'][var]:
@@ -173,6 +190,14 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                         "validators": get_validators(shared_models[refs['responses']]['properties'][var])
                     }
                     add_field(resource_vars, resource, var, field_data)
+                    if type(var_type) == list:
+                        var_type = var_type[0]
+                        if var_type == 'integer':
+                            var_type = 'int64'
+                        elif var_type == 'boolean':
+                            var_type = 'bool'
+                        elif var_type == 'number':
+                            var_type = 'int64'
                     if var_type not in ['int64', 'string', 'number', 'bool', 'array']:
                         if var not in check:
                             check.add(var)
@@ -190,6 +215,7 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                             check.add(var)
                             struct_vars.append(f"{to_camel_case(var)}  types.{var_type.capitalize()}  `tfsdk:\"{var}\"`")
             if 'requestBody' in schema:
+                refs['requestBody'] = check_for_validation(refs['requestBody'], shared_models)
                 for var in shared_models[refs['requestBody']]['properties']:
                     r_vars.append(var)
                     if shared_models[refs['requestBody']]['properties'][var] == {}:
@@ -213,13 +239,25 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                         "validators": get_validators(shared_models[refs['requestBody']]['properties'][var])
                     }
                     add_field(resource_vars, resource, var, field_data)
+                    if type(var_type) == list:
+                        var_type = var_type[0]
+                        if var_type == 'integer':
+                            var_type = 'int64'
+                        elif var_type == 'boolean':
+                            var_type = 'bool'
+                        elif var_type == 'number':
+                            var_type = 'int64'
                     if var_type not in ['int64', 'string', 'number', 'bool', 'array']:
                         if var not in check:
                             check.add(var)
-                            if var_type == 'interface{}':
+                            if var_type == "object":
+                                struct_vars.append(f"{to_camel_case(var)}  types.Object  `tfsdk:\"{var}\"`")
+                                schema_method.append(f"\"{var}\": schema.SingleNestedAttribute{{\n{indent(4)}{required}: true,\n{indent(4)}{generate_inner_schema(shared_models[refs['requestBody']]['properties'][var]['properties'], shared_models)}\n{indent(3)}}}")
+                            elif var_type == 'interface{}':
                                 struct_vars.append(f"{to_camel_case(var)}  {var_type}  `tfsdk:\"{var}\"`")
                                 schema_method.append(f"\"{var}\": schema.SingleNestedAttribute{{\n{indent(4)}{required}: true,\n{indent(4)}interface{{}}\n{indent(3)}}}")
                             else:
+                                # print(refs['requestBody'], var, var_type)
                                 struct_vars.append(f"{to_camel_case(var)}  models.{var_type.lower()}  `tfsdk:\"{var}\"`")
                                 schema_method.append(f"\"{var}\": schema.SingleNestedAttribute{{\n{indent(4)}{required}: true,\n{indent(4)}{generate_inner_schema(shared_models[var_type].get('properties', 'type'), shared_models)}\n{indent(3)}}}")
                     else:
@@ -297,6 +335,9 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                             if '$ref' in shared_models[refs['requestBody']]['properties'][var]:
                                 model_name = shared_models[refs['requestBody']]['properties'][var]['$ref'].split('/')[-1]
                                 model_vars = []
+                                if 'properties' not in shared_models[model_name]:
+                                    requestMethod_vars.append(f"{var} := models.{model_name.lower()}{{}}")
+                                    continue
                                 for key in shared_models[model_name]['properties']:
                                     if 'type' in shared_models[model_name]['properties'][key]:
                                         requestMethod_vars.append(f"{key} := data.{key.capitalize()}.Value{add_var_type(shared_models[model_name]['properties'][key]['type']).capitalize()}()")
@@ -304,6 +345,14 @@ def generate_resource(resources: Dict[str, Any], client: str, shared_models: Dic
                                 requestMethod_vars.append(f"{var} := models.{model_name.lower()}{{\n{"".join(model_vars)}{indent(1)}}}\n")
                                 continue
                     var_type = shared_models[refs['requestBody']]['properties'][var]['type']
+                    if var_type == 'integer':
+                        var_type = 'int64'
+                    if var_type == 'boolean':
+                        var_type = 'bool'
+                    if var_type == 'number':
+                        var_type = 'float64'
+                    if type(var_type) == list:
+                        var_type = var_type[0]
                     if var in 'required':
                         requestMethod_vars.append(f"{var} := data.{var.capitalize()}.Value{var_type.capitalize()}()")
                     else:

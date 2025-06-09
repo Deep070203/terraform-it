@@ -18,14 +18,14 @@ def resources_to_generate(resources: Dict[str, Any]) -> list:
     resources_to_generate = defaultdict(lambda: defaultdict(dict))
     for resource, value in resources.items():
         for method, schema in value.items():
-            resources_to_generate[resource.capitalize()][method] = schema['schema']
+            resources_to_generate[resource][method] = schema['schema']
     return resources_to_generate
 
 def data_sources_to_generate(data_sources: Dict[str, Any]) -> list:
     data_sources_to_generate = defaultdict(lambda: defaultdict(dict))
     for resource, value in data_sources.items():
         for method, schema in value.items():
-            data_sources_to_generate[resource.capitalize()][method] = schema['schema']
+            data_sources_to_generate[resource][method] = schema['schema']
     return data_sources_to_generate
 
 def schemas_to_generate(resources: Dict[str, Any], shared_models: Dict[str, Any]) -> list:
@@ -40,9 +40,11 @@ def schemas_to_generate(resources: Dict[str, Any], shared_models: Dict[str, Any]
             if 'parameters' not in schema['schema']:
                 continue
             for parameter in schema['schema']['parameters']:
-                # print(parameter)
                 if 'schema' in parameter and 'type' not in parameter['schema']:
-                    schemas.append(parameter['schema']['$ref'])
+                    if '$ref' in parameter['schema']:
+                        schemas.append(parameter['schema']['$ref'])
+                    else:
+                        schemas.extend(get_all_ref_values(parameter['schema']))
   
     schemas = list(set(schemas))
 
@@ -50,8 +52,8 @@ def schemas_to_generate(resources: Dict[str, Any], shared_models: Dict[str, Any]
         if schema[0] == '#':
             schema = schema.split('/')[-1]
         if schema in shared_models:
-            if schema == "WalletRecurringTransactionRule":
-                print(schema, shared_models[schema])
+            # if schema == "WalletRecurringTransactionRule":
+                # print(schema, shared_models[schema])
             schemas.extend(get_all_ref_values(shared_models[schema]))
         
     schemas = [ref.split('/')[-1] for ref in schemas]

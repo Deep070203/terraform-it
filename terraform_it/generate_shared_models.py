@@ -52,7 +52,8 @@ def generate_shared_models(models: Dict[str, Any], client: str, templates: Dict[
                 go_type = name
                 if 'enum' in schema:
                     go_type = name
-                    enum_consts = [f"{go_type}{create_var_names(val)} {go_type} = \"{val}\"" for val in schema['enum']]
+                    # print(go_type)
+                    enum_consts = [f"{go_type}{create_var_names(val)} {go_type} = \"{val}\"" for val in schema['enum'] if type(val) == str]
                     enum_context = {
                         "go_type": go_type,
                         "enum_consts": enum_consts,
@@ -96,7 +97,7 @@ def generate_shared_models(models: Dict[str, Any], client: str, templates: Dict[
                     go_type = name + 'Type'
                 if go_type.startswith('models.'):
                     go_type = go_type[7:]
-                enum_consts = [f"{go_type}{create_var_names(val)} {go_type} = \"{val}\"" for val in enums]
+                enum_consts = [f"{go_type}{create_var_names(val)} {go_type} = \"{val}\"" for val in enums if type(val) == str]
                 enum_context = {
                     "go_type": go_type,
                     "enum_consts": enum_consts,

@@ -41,7 +41,7 @@ def generate_provider(openapi_spec: Dict[str, Any], config: Dict[str, Any]):
         from terraform_it.generate_resource import generate_resource as gen_resource
         from terraform_it.generate_shared_models import generate_shared_models as gen_shared_models
         from terraform_it.generate_data_source import generate_data_source as gen_data_source
-        import terraform_it.generators as generators
+        from terraform_it.generators import *
         from terraform_it.helpers import get_information, get_resources, get_data_sources
     except ImportError as e:
         # Print the detailed error message
